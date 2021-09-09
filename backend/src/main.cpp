@@ -1,7 +1,7 @@
 #include "DatabaseConnection.h"
 #include "HttpServer.h"
 
-//Docs
+//doc : khbit().html
 int kbhit()
 {
     struct timeval tv;
