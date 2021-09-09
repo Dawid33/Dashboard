@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 if [[ -e test.db ]]; then
   rm test.db;
 fi
-
-sqlite3 test.db < test_db.sql
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+sqlite3 test.db < "${SCRIPT_DIR}"/test_db.sql

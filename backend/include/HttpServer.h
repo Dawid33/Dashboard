@@ -1,7 +1,3 @@
-//
-// Created by dawids on 09/09/2021.
-//
-
 #ifndef BACKEND_HTTPSERVER_H
 #define BACKEND_HTTPSERVER_H
 #include <microhttpd.h>

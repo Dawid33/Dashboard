@@ -1,6 +1,5 @@
 #include "DatabaseConnection.h"
 #include "HttpServer.h"
-#include <sqlite3.h>
 
 //Docs
 int kbhit()

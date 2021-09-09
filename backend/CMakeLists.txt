@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16.3)
 project(backend)
 set(CMAKE_CXX_STANDARD 14)
 
@@ -14,10 +14,10 @@ target_include_directories(backend PRIVATE include)
 target_link_libraries(backend PUBLIC ${MICRO})
 target_link_libraries(backend PUBLIC ${SQLITE3})
 
-configure_file(scripts/test_db.sql test_db.sql)
-
 add_custom_command(
     OUTPUT test.db
-    DEPENDS ../scripts/regenerate_db.sh test_db.sql
-    COMMAND /bin/sh ../scripts/regenerate_db.sh
+    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/regenerate_db.sh ${CMAKE_SOURCE_DIR}/scripts/test_db.sql
+    COMMAND /bin/sh -c 'cp -r ${CMAKE_SOURCE_DIR}/scripts . && ./scripts/regenerate_db.sh'
     )
+
+install(TARGETS backend)
