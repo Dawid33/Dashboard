@@ -19,6 +19,11 @@ ExternalProject_Add(target_sqlite3
     URL "https://sqlite.org/2021/sqlite-autoconf-3360000.tar.gz"
     CONFIGURE_COMMAND "${PROJECT_BINARY_DIR}/target_sqlite3-prefix/src/target_sqlite3/configure" "--prefix=${DEPS}"
     )
+ExternalProject_Add(target_websockets
+    GIT_REPOSITORY https://github.com/zaphoyd/websocketpp
+    BUILD_COMMAND   make
+    CMAKE_ARGS      -DCMAKE_INSTALL_PREFIX:PATH=${DEPS}
+    )
 add_library(libmicrohttpd SHARED IMPORTED)
 set_property(TARGET libmicrohttpd PROPERTY IMPORTED_LOCATION ${DEPS}/lib/libmicrohttpd.so)
 add_library(libsqlite3 SHARED IMPORTED)
@@ -32,7 +37,7 @@ add_executable(backend
     src/main.cpp
     src/HttpServer.cpp
     src/DatabaseConnection.cpp)
-add_dependencies(backend target_libmicrohttpd target_sqlite3 target_libcjson)
+add_dependencies(backend target_libmicrohttpd target_sqlite3 target_libcjson target_websockets)
 target_include_directories(backend PRIVATE include)
 target_include_directories(backend PUBLIC ${DEPS}/include)
 target_link_libraries(backend PUBLIC libsqlite3 libmicrohttpd libcjson)
