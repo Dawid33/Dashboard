@@ -1,7 +1,8 @@
 #include "HttpServer.h"
-#include <microhttpd.h>
+#include "microhttpd.h"
 #include <cstring>
 #include <iostream>
+#include "cjson/cJSON.h"
 #include <memory>
 
 #define POSTBUFFERSIZE  512
@@ -15,26 +16,45 @@ HttpServer::~HttpServer() {
 }
 
 bool HttpServer::start() {
-    daemon = MHD_start_daemon (MHD_USE_AUTO | MHD_USE_INTERNAL_POLLING_THREAD,
+    daemon = MHD_start_daemon (MHD_USE_THREAD_PER_CONNECTION,
                                port, NULL, NULL,
-                               &client_connection_handler, NULL,
-                               MHD_OPTION_NOTIFY_COMPLETED, &HttpServer::connection_terminator,
+                               &HttpServer::client_connection_handler, NULL,
+                               MHD_OPTION_NOTIFY_COMPLETED, &HttpServer::deallocate_connection,
                                NULL, MHD_OPTION_END);
     if (NULL == daemon) return false;
     return true;
 }
 
-MHD_Result
+int
 HttpServer::client_connection_handler(void *cls, struct MHD_Connection *connection, const char *url, const char *method,
                                       const char *version, const char *upload_data, size_t *upload_data_size,
                                       void **con_cls) {
+    if(*con_cls == NULL) {
+
+        *con_cls = connection;
+        return MHD_YES;
+    }
+
+    // Continue handling POST request.
+    if (0 == strcmp(method, "POST")) {
+        if (*upload_data_size != 0) {
+            cJSON *json = cJSON_Parse(upload_data);
+            char *string = cJSON_Print(json);
+            std::cout << string << std::endl;
+            cJSON_Delete(json);
+            *upload_data_size = 0;
+            return MHD_YES;
+        } else {
+            return MHD_NO;
+        }
+    }
+    return MHD_NO;
 }
 
-int HttpServer::iterate_post(void *coninfo_cls, enum MHD_ValueKind kind, const char *key, const char *filename,
-                             const char *content_type, const char *transfer_encoding, const char *data, uint64_t off,
-                             size_t size) {
-}
-
-void HttpServer::connection_terminator(void *cls, struct MHD_Connection *connection, void **con_cls,
+/*
+ * de-allocate a connection that has been terminated abruptly.
+ */
+void HttpServer::deallocate_connection(void *cls, struct MHD_Connection *connection, void **con_cls,
                                    enum MHD_RequestTerminationCode toe) {
+    *con_cls = NULL;
 }

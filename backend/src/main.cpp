@@ -1,5 +1,6 @@
 #include "DatabaseConnection.h"
 #include "HttpServer.h"
+#include <string>
 
 //doc : khbit().html
 int kbhit()

@@ -1,5 +1,7 @@
 #include "DatabaseConnection.h"
 #include <sqlite3.h>
+#include <memory>
+#include <string>
 #include <stdio.h>
 
 DatabaseConnection::DatabaseConnection() {}
