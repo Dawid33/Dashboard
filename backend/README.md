@@ -1,3 +1,8 @@
+### Dependencies
+* git
+* cmake
+* make
+
 ### Build
 ```
 git clone https://github.com/Dawid33/backend

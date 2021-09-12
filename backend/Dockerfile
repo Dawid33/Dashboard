@@ -2,8 +2,8 @@
 FROM ubuntu
 
 #RUN pacman -Syuu --noconfirm libmicrohttpd cmake gcc clang make sudo
-RUN apt-get update -y && apt-get upgrade -y
-RUN apt-get install --yes cmake clang make sudo sqlite3
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y --no-install-recommends && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake clang make sudo sqlite3 git
 
 COPY . /backend
 RUN mkdir /backend/build;

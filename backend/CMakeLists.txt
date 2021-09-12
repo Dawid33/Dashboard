@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-set(CMAKE_CXX_STANDARD 14)
-project(backend CXX)
+project(backend)
 find_program(MAKE NAMES make)
 
 include(ExternalProject)
@@ -8,39 +7,40 @@ include(ExternalProject)
 set_directory_properties(PROPERTIES EP_UPDATE_DISCONNECTED true)
 set(DEPS ${PROJECT_BINARY_DIR}/deps)
 ExternalProject_Add(target_libcjson
-    GIT_REPOSITORY  https://github.com/DaveGamble/cJSON
+    GIT_REPOSITORY  "https://github.com/DaveGamble/cJSON"
     CMAKE_ARGS      -DCMAKE_INSTALL_PREFIX:PATH=${DEPS}
-    )
-ExternalProject_Add(target_libmicrohttpd
-    URL "https://mirror.lyrahosting.com/gnu/libmicrohttpd/libmicrohttpd-0.9.16.tar.gz"
-    CONFIGURE_COMMAND "${PROJECT_BINARY_DIR}/target_libmicrohttpd-prefix/src/target_libmicrohttpd/configure" "--prefix=${DEPS}"
     )
 ExternalProject_Add(target_sqlite3
     URL "https://sqlite.org/2021/sqlite-autoconf-3360000.tar.gz"
     CONFIGURE_COMMAND "${PROJECT_BINARY_DIR}/target_sqlite3-prefix/src/target_sqlite3/configure" "--prefix=${DEPS}"
     )
-ExternalProject_Add(target_websockets
-    GIT_REPOSITORY https://github.com/zaphoyd/websocketpp
-    BUILD_COMMAND   make
+ExternalProject_Add(target_libwebsockets
+    GIT_REPOSITORY  "https://libwebsockets.org/repo/libwebsockets"
+    GIT_TAG         v4.2-stable
     CMAKE_ARGS      -DCMAKE_INSTALL_PREFIX:PATH=${DEPS}
     )
-add_library(libmicrohttpd SHARED IMPORTED)
-set_property(TARGET libmicrohttpd PROPERTY IMPORTED_LOCATION ${DEPS}/lib/libmicrohttpd.so)
+
 add_library(libsqlite3 SHARED IMPORTED)
 set_property(TARGET libsqlite3 PROPERTY IMPORTED_LOCATION ${DEPS}/lib/libsqlite3.so)
 add_library(libcjson SHARED IMPORTED)
 set_property(TARGET libcjson PROPERTY IMPORTED_LOCATION ${DEPS}/lib/libcjson.so)
-
+add_library(libwebsockets SHARED IMPORTED)
+set_property(TARGET libwebsockets PROPERTY IMPORTED_LOCATION ${DEPS}/lib/libwebsockets.so)
+file(GLOB_RECURSE HEADERS include/*)
 #backend
 add_executable(backend
     test.db
-    src/main.cpp
-    src/HttpServer.cpp
-    src/DatabaseConnection.cpp)
-add_dependencies(backend target_libmicrohttpd target_sqlite3 target_libcjson target_websockets)
+    src/main.c
+    src/http_server.c
+    src/database_connection.c
+    src/lws_protocol.c
+    src/util.c
+    src/lws.c
+    ${HEADERS})
+add_dependencies(backend target_sqlite3 target_libcjson target_libwebsockets)
 target_include_directories(backend PRIVATE include)
 target_include_directories(backend PUBLIC ${DEPS}/include)
-target_link_libraries(backend PUBLIC libsqlite3 libmicrohttpd libcjson)
+target_link_libraries(backend PUBLIC libsqlite3 libcjson libwebsockets)
 
 # Debug database
 add_custom_command(
