@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(backend)
+project(backend C)
 find_program(MAKE NAMES make)
 
 include(ExternalProject)
