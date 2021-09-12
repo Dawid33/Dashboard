@@ -1,10 +1,11 @@
 import { wait, waitFor } from '@testing-library/react';
+import { stat } from 'fs';
 import React from 'react';
 import './App.css';
 
 interface LoginFormState {
-    username? : string;
-    password? : string;
+    username : string;
+    password : string;
 }
 
     export default class LoginForm extends React.Component<{}, LoginFormState> {
@@ -22,7 +23,7 @@ interface LoginFormState {
     handleLogin(event : any) {
         let socket = new WebSocket("ws://localhost:8888");
         socket.onopen = (event : Event) => {
-            socket.send("Hello");
+            socket.send(this.state.username);
         }
         socket.onmessage = (event : MessageEvent) => {
             alert(event.data);

@@ -15,7 +15,9 @@
 .LoginForm {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  row-gap: 20px;
+  grid-template-rows: 1fr 1em 1em 2em 2em;
+  row-gap: 5%;
+  column-gap: 1vw;
   justify-content: left;
 }
 
@@ -27,13 +29,13 @@
 }
 
 .LoginForm-item {
-
 }
 
 .LoginForm-button {
-  margin: 10px;
-  margin-left: 20px;
-  margin-right: 20px;
+  
+  justify-self: center;
+  padding-left: 35%;
+  padding-right: 35%;
   border-radius: 10px;
   font-size: large;
   color: darkblue;

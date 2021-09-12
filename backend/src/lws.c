@@ -2,26 +2,25 @@
 #include "libwebsockets.h"
 #include "lws_protocol.h"
 #include <signal.h>
-
+#define PORT 8888
 
 static struct lws_protocols protocols[] = {
-        LWS_PLUGIN_PROTOCOL_MINIMAL_SERVER_ECHO,
+        {
+            "websocket-server",
+            handle_connection,
+            sizeof(SessionData),
+            1024,
+            0, NULL, 0
+	    },
         { NULL, NULL, 0, 0 } /* terminator */
 };
 
-static int interrupted, port = 7681, options;
+static int interrupted;
 
 /* pass pointers to shared vars to the protocol */
 
-static const struct lws_protocol_vhost_options pvo_options = {
-        NULL,
-        NULL,
-        "options",		/* pvo name */
-        (void *)&options	/* pvo value */
-};
-
 static const struct lws_protocol_vhost_options pvo_interrupted = {
-        &pvo_options,
+        NULL,
         NULL,
         "interrupted",		/* pvo name */
         (void *)&interrupted	/* pvo value */
@@ -30,7 +29,7 @@ static const struct lws_protocol_vhost_options pvo_interrupted = {
 static const struct lws_protocol_vhost_options pvo = {
         NULL,				/* "next" pvo linked-list */
         &pvo_interrupted,		/* "child" pvo linked-list */
-        "lws-minimal-server-echo",	/* protocol name we belong to on this vhost */
+        "websocket-server",	/* protocol name we belong to on this vhost */
         ""				/* ignored */
 };
 
@@ -41,31 +40,16 @@ void sigint_handler(int sig)
 
 int lws_start(int argc, const char **argv)
 {
-    struct lws_context_creation_info info;
-    struct lws_context *context;
-    const char *p;
-    int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
-    /* for LLL_ verbosity above NOTICE to be built into lws,
-     * lws must have been configured and built with
-     * -DCMAKE_BUILD_TYPE=DEBUG instead of =RELEASE */
-    /* | LLL_INFO */ /* | LLL_PARSER */ /* | LLL_HEADER */
-    /* | LLL_EXT */ /* | LLL_CLIENT */ /* | LLL_LATENCY */
-    /* | LLL_DEBUG */;
-
     signal(SIGINT, sigint_handler);
 
-    if ((p = lws_cmdline_option(argc, argv, "-d")))
-        logs = atoi(p);
-
+    int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
     lws_set_log_level(logs, NULL);
-    lwsl_user("LWS minimal ws client echo + permessage-deflate + multifragment bulk message\n");
-    lwsl_user("   lws-minimal-ws-client-echo [-n (no exts)] [-p port] [-o (once)]\n");
 
-    if (lws_cmdline_option(argc, argv, "-o"))
-        options |= 1;
+    struct lws_context_creation_info info;
+    struct lws_context *context;
 
     memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-    info.port = 8888;
+    info.port = PORT;
     info.protocols = protocols;
     info.pvo = &pvo;
     info.pt_serv_buf_size = 32 * 1024;
@@ -78,6 +62,7 @@ int lws_start(int argc, const char **argv)
         return 1;
     }
 
+    int n = 0;
     while (n >= 0 && !interrupted)
         n = lws_service(context, 0);
 
