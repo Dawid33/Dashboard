@@ -31,7 +31,6 @@ file(GLOB_RECURSE HEADERS include/*)
 add_executable(backend
     test.db
     src/main.c
-    src/http_server.c
     src/database_connection.c
     src/lws_protocol.c
     src/util.c

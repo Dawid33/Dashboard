@@ -3,37 +3,35 @@
 #include "lws_protocol.h"
 #include <signal.h>
 
+
 static struct lws_protocols protocols[] = {
-        { "http", lws_callback_http_dummy, 0, 0 },
-        LWS_PLUGIN_PROTOCOL_MINIMAL,
+        LWS_PLUGIN_PROTOCOL_MINIMAL_SERVER_ECHO,
         { NULL, NULL, 0, 0 } /* terminator */
 };
 
-static const lws_retry_bo_t retry = {
-        .secs_since_valid_ping = 3,
-        .secs_since_valid_hangup = 10,
+static int interrupted, port = 7681, options;
+
+/* pass pointers to shared vars to the protocol */
+
+static const struct lws_protocol_vhost_options pvo_options = {
+        NULL,
+        NULL,
+        "options",		/* pvo name */
+        (void *)&options	/* pvo value */
 };
 
-static int interrupted;
+static const struct lws_protocol_vhost_options pvo_interrupted = {
+        &pvo_options,
+        NULL,
+        "interrupted",		/* pvo name */
+        (void *)&interrupted	/* pvo value */
+};
 
-static const struct lws_http_mount mount = {
-        /* .mount_next */		NULL,		/* linked-list "next" */
-        /* .mountpoint */		"/",		/* mountpoint URL */
-        /* .origin */			"./mount-origin",  /* serve from dir */
-        /* .def */			"index.html",	/* default filename */
-        /* .protocol */			NULL,
-        /* .cgienv */			NULL,
-        /* .extra_mimetypes */		NULL,
-        /* .interpret */		NULL,
-        /* .cgi_timeout */		0,
-        /* .cache_max_age */		0,
-        /* .auth_mask */		0,
-        /* .cache_reusable */		0,
-        /* .cache_revalidate */		0,
-        /* .cache_intermediaries */	0,
-        /* .origin_protocol */		LWSMPRO_FILE,	/* files in a dir */
-        /* .mountpoint_len */		1,		/* char count */
-        /* .basic_auth_login_file */	NULL,
+static const struct lws_protocol_vhost_options pvo = {
+        NULL,				/* "next" pvo linked-list */
+        &pvo_interrupted,		/* "child" pvo linked-list */
+        "lws-minimal-server-echo",	/* protocol name we belong to on this vhost */
+        ""				/* ignored */
 };
 
 void sigint_handler(int sig)
@@ -41,7 +39,8 @@ void sigint_handler(int sig)
     interrupted = 1;
 }
 
-int lws_start(int argc, char **argv) {
+int lws_start(int argc, const char **argv)
+{
     struct lws_context_creation_info info;
     struct lws_context *context;
     const char *p;
@@ -59,30 +58,19 @@ int lws_start(int argc, char **argv) {
         logs = atoi(p);
 
     lws_set_log_level(logs, NULL);
-    lwsl_user("LWS minimal ws server | visit http://localhost:7681 (-s = use TLS / https)\n");
+    lwsl_user("LWS minimal ws client echo + permessage-deflate + multifragment bulk message\n");
+    lwsl_user("   lws-minimal-ws-client-echo [-n (no exts)] [-p port] [-o (once)]\n");
+
+    if (lws_cmdline_option(argc, argv, "-o"))
+        options |= 1;
 
     memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-    info.port = 7681;
-    info.mounts = &mount;
+    info.port = 8888;
     info.protocols = protocols;
-    info.vhost_name = "localhost";
-    info.options =
-            LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
-
-#if defined(LWS_WITH_TLS)
-    if (lws_cmdline_option(argc, argv, "-s")) {
-        lwsl_user("Server using TLS\n");
-        info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-        info.ssl_cert_filepath = "localhost-100y.cert";
-        info.ssl_private_key_filepath = "localhost-100y.key";
-    }
-#endif
-
-    if (lws_cmdline_option(argc, argv, "-h"))
-        info.options |= LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK;
-
-    if (lws_cmdline_option(argc, argv, "-v"))
-        info.retry_and_idle_policy = &retry;
+    info.pvo = &pvo;
+    info.pt_serv_buf_size = 32 * 1024;
+    info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
+                   LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
     context = lws_create_context(&info);
     if (!context) {
@@ -94,4 +82,8 @@ int lws_start(int argc, char **argv) {
         n = lws_service(context, 0);
 
     lws_context_destroy(context);
+
+    lwsl_user("Completed %s\n", interrupted == 2 ? "OK" : "failed");
+
+    return interrupted != 2;
 }

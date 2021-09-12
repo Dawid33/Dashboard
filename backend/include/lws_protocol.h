@@ -3,42 +3,45 @@
 #include <stdlib.h>
 #include <libwebsockets.h>
 
+#define RING_DEPTH 4096
+
+/* one of these created for each message */
+
 struct msg {
     void *payload; /* is malloc'd */
     size_t len;
+    char binary;
+    char first;
+    char final;
 };
 
-/* one of these is created for each client connecting to us */
-
-struct per_session_data__minimal {
-    struct per_session_data__minimal *pss_list;
-    struct lws *wsi;
-    int last; /* the last message number we sent */
+struct per_session_data__minimal_server_echo {
+    struct lws_ring *ring;
+    uint32_t msglen;
+    uint32_t tail;
+    uint8_t completed:1;
+    uint8_t flow_controlled:1;
+    uint8_t write_consume_pending:1;
 };
 
-/* one of these is created for each vhost our protocol is used with */
-
-struct per_vhost_data__minimal {
+struct vhd_minimal_server_echo {
     struct lws_context *context;
     struct lws_vhost *vhost;
-    const struct lws_protocols *protocol;
 
-    struct per_session_data__minimal *pss_list; /* linked-list of live pss*/
-
-    struct msg amsg; /* the one pending message... */
-    int current; /* the current message number we are caching */
+    int *interrupted;
+    int *options;
 };
 
 int
-callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
-                 void *user, void *in, size_t len);
+callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
+                             void *user, void *in, size_t len);
 
-#define LWS_PLUGIN_PROTOCOL_MINIMAL \
+#define LWS_PLUGIN_PROTOCOL_MINIMAL_SERVER_ECHO \
 	{ \
-		"lws-minimal", \
-		callback_minimal, \
-		sizeof(struct per_session_data__minimal), \
-		128, \
+		"lws-minimal-server-echo", \
+		callback_minimal_server_echo, \
+		sizeof(struct per_session_data__minimal_server_echo), \
+		1024, \
 		0, NULL, 0 \
 	}
 
